@@ -1,0 +1,919 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Premières révisions</title>
+<style>
+:root{--primary:#27ae60;--secondary:#2980b9;--action:#e67e22;--error:#e74c3c;--bg:#fffde7;--violet:#8e44ad;--nav:#7f8c8d;--ar:#27ae60;}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{background:var(--bg);margin:0;padding:0;}body{font-family:'Segoe UI',sans-serif;background:var(--bg);display:flex;justify-content:center;align-items:center;min-height:100vh;min-height:100dvh;}
+.container{background:var(--bg);width:93%;max-width:420px;border-radius:20px;box-shadow:0 4px 18px rgba(0,0,0,0.10);padding:16px;text-align:center;}
+.rubrique-badge{background:#f9e94e;color:#5a4a00;padding:5px 14px;border-radius:20px;font-size:.75rem;font-weight:bold;margin-bottom:8px;display:inline-flex;align-items:center;gap:6px;border:1px solid #d4c400;width:auto;justify-content:center;flex-wrap:wrap;white-space:nowrap;}
+.card{background:rgba(255,255,255,0.7);border:1px solid #e8e0a0;border-radius:14px;padding:8px;margin-bottom:6px;}
+.diff-container{font-size:1.3rem;margin:8px 0;letter-spacing:2px;min-height:1.8rem;display:flex;justify-content:center;flex-wrap:nowrap;align-items:center;gap:2px;overflow-x:auto;}
+.char-correct{color:var(--primary);font-weight:bold;}
+.char-wrong{color:var(--error);text-decoration:line-through;}
+.char-missing{color:#bbb;}
+.char-accent{color:var(--action);font-weight:bold;}
+
+.btn{border:none;border-radius:12px;cursor:pointer;font-size:.85rem;font-weight:bold;width:100%;min-height:44px;margin-top:6px;display:flex;align-items:center;justify-content:center;gap:6px;transition:.2s;font-family:'Segoe UI',sans-serif;}
+.btn-menu{background:white;border:1px solid #ccc;color:#333;padding:14px 16px;text-align:left;justify-content:flex-start;min-height:62px;border-radius:12px;}
+.btn-menu:hover{background:#f5f5f5;}
+.btn-play{background:var(--secondary);color:white;}
+.btn-verify{background:var(--action);color:white;}
+.btn-ok{background:var(--primary);color:white;font-size:1rem;min-height:48px;border-radius:14px;}
+.btn-ko{background:var(--error);color:white;font-size:1rem;min-height:48px;border-radius:14px;}
+.btn-continue{background:var(--secondary);color:white;font-size:1rem;min-height:48px;border-radius:14px;box-shadow:0 3px 8px rgba(41,128,185,0.3);}
+.btn-nav{background:none;color:#95a5a6;border:1px solid #ccc;min-height:30px;margin-top:10px;font-size:.75rem;padding:4px 8px;}
+.eval-box{display:none;flex-direction:column;}
+.footer{margin-top:4px;font-size:.7rem;color:#b5a84a;font-weight:400;}
+.bravo-svg{width:70px;height:70px;margin:8px auto;display:block;}
+.score-final{font-size:1rem;font-weight:bold;color:#2c3e30;margin:8px 0;background:#f4f7f4;padding:7px;border-radius:10px;border:1px dashed #b8ccba;}
+.word-illustration{width:100%;max-width:170px;height:auto;max-height:130px;object-fit:contain;margin:0 auto 6px;display:block;border-radius:10px;}
+.hint-illustration{width:100%;max-width:160px;height:auto;max-height:120px;object-fit:contain;display:block;margin:0 auto;border-radius:8px;opacity:0.9;}
+
+.menu-icons{font-size:2.4rem;display:flex;align-items:center;gap:4px;min-width:80px;justify-content:center;flex-shrink:0;}
+.menu-plus{font-size:1rem;color:#8e44ad;font-weight:bold;}
+.menu-label{font-size:1.15rem;font-weight:bold;color:#333;flex:1;padding-left:8px;text-align:left;}
+
+.btn-ar-sound{background:none;border:none;cursor:pointer;padding:0 2px;opacity:.85;flex-shrink:0;line-height:1;display:inline-flex;align-items:center;vertical-align:middle;}
+.btn-ar-sound:hover{opacity:1;}
+/* zone réponse */
+.answer-display{
+  min-height:52px;border:3px dashed #dee2e6;border-radius:11px;
+  display:flex;align-items:center;justify-content:center;
+  background:#f9f9f9;margin-bottom:7px;padding:6px 10px;
+  white-space:nowrap;overflow:hidden;
+}
+.answer-display:empty::after{content:'...';color:#bbb;font-size:.9rem;}
+.answer-word{
+  display:inline-block;white-space:nowrap;
+  font-size:clamp(0.7rem,6vw,1.4rem);
+  letter-spacing:clamp(2px,1vw,6px);
+  font-family:'Courier New',monospace;
+  color:#2c3e50;line-height:1.4;
+}
+.answer-char{
+  display:inline-block;
+  cursor:pointer;
+  border-bottom:2px solid #dee2e6;
+  padding:0 1px;
+  transition:color .1s;
+}
+.answer-char.live-ko{color:var(--error);text-decoration:line-through;border-color:var(--error);}
+.answer-char:hover{color:var(--error);}
+.answer-char.model{color:#ccc;border-color:#eee;}
+
+/* clavier */
+.magnetic-keyboard{background:#d5d8dc;border-radius:14px;padding:9px 6px;margin-top:8px;}
+.keyboard-rows{display:flex;flex-direction:column;gap:4px;}
+.keyboard-row{display:flex;justify-content:center;gap:3px;flex-wrap:wrap;}
+.mag-letter{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:7px;font-size:.95rem;font-weight:bold;cursor:pointer;border:none;box-shadow:0 3px 0 rgba(0,0,0,.2);flex-shrink:0;transition:transform .1s,box-shadow .1s;}
+.mag-letter:active{transform:translateY(2px);box-shadow:0 1px 0 rgba(0,0,0,.2);}
+.mag-letter:disabled{opacity:.4;cursor:default;}
+.vowel{background:#2c3e50;color:white;border:1px solid #1a252f;font-family:"Courier New",monospace;}
+.consonant{background:#f2f3f4;color:#1a1a1a;border:1px solid #bbb;font-family:"Courier New",monospace;}
+.mag-delete{padding:0 10px;background:#626567;color:white;font-size:.8rem;height:34px;border-radius:7px;border:none;cursor:pointer;font-weight:bold;font-family:"Courier New",monospace;box-shadow:0 3px 0 rgba(0,0,0,.2);}
+.mag-delete:disabled{opacity:.4;cursor:default;}
+.mag-space{width:75px;height:34px;background:#f2f3f4;border:1px solid #bbb;border-radius:7px;cursor:pointer;font-size:.7rem;color:#626567;font-family:"Courier New",monospace;box-shadow:0 3px 0 rgba(0,0,0,.15);}
+.mag-space:disabled{opacity:.4;cursor:default;}
+
+/* copie*/
+.guided-word{display:flex;justify-content:center;gap:3px;flex-wrap:nowrap;margin:8px 0;overflow-x:auto;padding:4px 12px;scroll-padding:12px;-webkit-overflow-scrolling:touch;}
+.guided-cell{width:clamp(22px,7.5vw,32px);height:clamp(28px,8.5vw,38px);border-radius:7px;border:2px solid #dee2e6;display:flex;align-items:center;justify-content:center;font-size:clamp(.78rem,3.2vw,1.2rem);background:#f9f9f9;transition:background .3s,border-color .3s;flex-shrink:0;}
+.guided-cell.active{border-color:var(--secondary);background:#ebf5fb;animation:pulse .9s infinite;}
+.guided-cell.ok{border-color:var(--primary);background:#eafaf1;color:var(--primary);font-weight:bold;}
+.guided-cell.ko{border-color:var(--error);background:#fdedec;color:var(--error);animation:shake .3s;}
+.guided-cell.space{border:none;background:none;width:10px;}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(41,128,185,.3);}50%{box-shadow:0 0 0 5px rgba(41,128,185,0);}}
+@keyframes shake{0%,100%{transform:translateX(0);}25%{transform:translateX(-4px);}75%{transform:translateX(4px);}}
+
+#end-screen{display:none;}
+#game-zone{background:#fffde7;border-radius:16px;padding:10px;}
+#end-screen{border-radius:16px;padding:10px;background:#fffde7;}
+
+/* barre de progression */
+.progress-bar-wrap{background:#e8e0a0;border-radius:20px;height:10px;margin-bottom:10px;overflow:hidden;}
+.progress-bar-fill{height:100%;background:var(--secondary);transition:width .4s ease;}
+
+
+
+/* mobile */
+@media(max-width:380px){
+  .mag-letter{width:30px;height:30px;font-size:.82rem;}
+  .mag-delete{font-size:.72rem;padding:0 7px;height:30px;}
+  .mag-space{width:62px;font-size:.62rem;height:30px;}
+  .container{padding:10px;}
+  .word-illustration{max-width:120px;max-height:90px;}
+  .guided-cell{width:28px;height:32px;font-size:1rem;}
+}
+
+
+/* mode paysage smartphone */
+@media (orientation: landscape) and (max-height: 500px) {
+  body{align-items:flex-start;padding:4px 0;}
+  .container{flex-direction:row;flex-wrap:wrap;max-width:100%;width:99%;border-radius:12px;padding:8px;gap:8px;}
+  #menu-initial{flex:1;min-width:200px;}
+  #game-zone{flex:1;min-width:200px;}
+  #end-screen{flex:1;min-width:200px;}
+  .word-illustration{max-width:100px;max-height:80px;}
+  .hint-illustration{max-width:90px;max-height:70px;}
+  .magnetic-keyboard{padding:5px 4px;}
+  .mag-letter{width:26px;height:26px;font-size:.72rem;}
+  .mag-delete{height:26px;font-size:.7rem;}
+  .mag-space{height:26px;width:56px;}
+  .btn{min-height:32px;font-size:.78rem;margin-top:4px;}
+  .btn-menu{min-height:32px;}
+  .card{padding:6px;margin-bottom:4px;}
+  .progress-bar-wrap{height:6px;margin-bottom:6px;}
+  .footer{margin-top:4px;font-size:.72rem;}
+}
+</style>
+</head>
+<body>
+<div class="container">
+
+<!-- MENU -->
+<div id="menu-initial" style="display:flex;flex-direction:column;align-items:stretch;">
+  <h2 style="margin-bottom:18px;color:white;font-size:1.3rem;background:var(--secondary);padding:14px 16px;border-radius:12px;letter-spacing:.02em;text-align:center;width:100%;box-sizing:border-box;">Premières révisions</h2>
+  <div style="display:flex;align-items:center;gap:6px;margin-top:10px;">
+    <button class="btn btn-menu" style="margin-top:0;flex:1;" onclick="startGame('copie')">
+      <span class="menu-icons">👀<span class="menu-plus">+</span>🔤</span><span class="menu-label">copie</span>
+    </button>
+    <button class="btn-ar-sound" onclick="playAR(LABELS_AR['copie'])"><svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 28 28' width='18' height='18'>
+  <circle cx='14' cy='14' r='13' fill='#00c853' stroke='none'/>
+  <text x='14' y='18.5' text-anchor='middle' font-size='13' fill='white' font-family='serif' font-weight='bold'>+</text>
+  <path d='M20,9 Q23,14 20,19' stroke='white' stroke-width='1.8' fill='none' stroke-linecap='round'/>
+  <path d='M22,6.5 Q27,14 22,21.5' stroke='white' stroke-width='1.5' fill='none' stroke-linecap='round' opacity='0.6'/>
+</svg></button>
+  </div>
+  <div style="display:flex;align-items:center;gap:6px;margin-top:10px;">
+    <button class="btn btn-menu" style="margin-top:0;flex:1;" onclick="startGame('répète')">
+      <span class="menu-icons">🎙️</span><span class="menu-label">répète</span>
+    </button>
+    <button class="btn-ar-sound" onclick="playAR(LABELS_AR['répète'])"><svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 28 28' width='18' height='18'>
+  <circle cx='14' cy='14' r='13' fill='#00c853' stroke='none'/>
+  <text x='14' y='18.5' text-anchor='middle' font-size='13' fill='white' font-family='serif' font-weight='bold'>+</text>
+  <path d='M20,9 Q23,14 20,19' stroke='white' stroke-width='1.8' fill='none' stroke-linecap='round'/>
+  <path d='M22,6.5 Q27,14 22,21.5' stroke='white' stroke-width='1.5' fill='none' stroke-linecap='round' opacity='0.6'/>
+</svg></button>
+  </div>
+  <div style="display:flex;align-items:center;gap:6px;margin-top:10px;">
+    <button class="btn btn-menu" style="margin-top:0;flex:1;" onclick="startGame('lis')">
+      <span class="menu-icons">👁️</span><span class="menu-label">lis</span>
+    </button>
+    <button class="btn-ar-sound" onclick="playAR(LABELS_AR['lis'])"><svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 28 28' width='18' height='18'>
+  <circle cx='14' cy='14' r='13' fill='#00c853' stroke='none'/>
+  <text x='14' y='18.5' text-anchor='middle' font-size='13' fill='white' font-family='serif' font-weight='bold'>+</text>
+  <path d='M20,9 Q23,14 20,19' stroke='white' stroke-width='1.8' fill='none' stroke-linecap='round'/>
+  <path d='M22,6.5 Q27,14 22,21.5' stroke='white' stroke-width='1.5' fill='none' stroke-linecap='round' opacity='0.6'/>
+</svg></button>
+  </div>
+  <div style="display:flex;align-items:center;gap:6px;margin-top:10px;">
+    <button class="btn btn-menu" style="margin-top:0;flex:1;" onclick="startGame('écris les lettres que tu entends')">
+      <span class="menu-icons">🔤</span><span class="menu-label">écris les lettres</span>
+    </button>
+    <button class="btn-ar-sound" onclick="playAR(LABELS_AR['écris les lettres que tu entends'])"><svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 28 28' width='18' height='18'>
+  <circle cx='14' cy='14' r='13' fill='#00c853' stroke='none'/>
+  <text x='14' y='18.5' text-anchor='middle' font-size='13' fill='white' font-family='serif' font-weight='bold'>+</text>
+  <path d='M20,9 Q23,14 20,19' stroke='white' stroke-width='1.8' fill='none' stroke-linecap='round'/>
+  <path d='M22,6.5 Q27,14 22,21.5' stroke='white' stroke-width='1.5' fill='none' stroke-linecap='round' opacity='0.6'/>
+</svg></button>
+  </div>
+  <div style="display:flex;align-items:center;gap:6px;margin-top:10px;">
+    <button class="btn btn-menu" style="margin-top:0;flex:1;" onclick="startGame('écris le ou les mots que tu entends')">
+      <span class="menu-icons">✏️</span><span class="menu-label">écris le ou les mots</span>
+    </button>
+    <button class="btn-ar-sound" onclick="playAR(LABELS_AR['écris le ou les mots que tu entends'])"><svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 28 28' width='18' height='18'>
+  <circle cx='14' cy='14' r='13' fill='#00c853' stroke='none'/>
+  <text x='14' y='18.5' text-anchor='middle' font-size='13' fill='white' font-family='serif' font-weight='bold'>+</text>
+  <path d='M20,9 Q23,14 20,19' stroke='white' stroke-width='1.8' fill='none' stroke-linecap='round'/>
+  <path d='M22,6.5 Q27,14 22,21.5' stroke='white' stroke-width='1.5' fill='none' stroke-linecap='round' opacity='0.6'/>
+</svg></button>
+  </div>
+</div>
+
+<!-- JEU -->
+<div id="game-zone" style="display:none;">
+  <div style="display:flex;align-items:center;justify-content:center;gap:6px;margin-bottom:0;">
+    <div id="rubrique-display" class="rubrique-badge"></div>
+    <button class="btn-ar-sound" id="btn-ar-rubrique" style="display:none;" onclick="playAR(_currentRubriqueMp3)"><svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 28 28' width='18' height='18'>
+  <circle cx='14' cy='14' r='13' fill='#00c853' stroke='none'/>
+  <text x='14' y='18.5' text-anchor='middle' font-size='13' fill='white' font-family='serif' font-weight='bold'>+</text>
+  <path d='M20,9 Q23,14 20,19' stroke='white' stroke-width='1.8' fill='none' stroke-linecap='round'/>
+  <path d='M22,6.5 Q27,14 22,21.5' stroke='white' stroke-width='1.5' fill='none' stroke-linecap='round' opacity='0.6'/>
+</svg></button>
+  </div>
+  <div class="progress-bar-wrap"><div class="progress-bar-fill" id="progress-fill" style="width:0%"></div></div>
+  <div style="display:flex;gap:6px;align-items:center;margin-bottom:14px;">
+    <button id="btn-load-question" class="btn btn-play" style="margin-top:0;flex:1;" onclick="loadCurrentTask()">🔊 écoute</button>
+    <button class="btn-ar-sound" id="btn-ar-ecoute" onclick="playAR(UI_AR.ecoute)"><svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 28 28' width='18' height='18'>
+  <circle cx='14' cy='14' r='13' fill='#00c853' stroke='none'/>
+  <text x='14' y='18.5' text-anchor='middle' font-size='13' fill='white' font-family='serif' font-weight='bold'>+</text>
+  <path d='M20,9 Q23,14 20,19' stroke='white' stroke-width='1.8' fill='none' stroke-linecap='round'/>
+  <path d='M22,6.5 Q27,14 22,21.5' stroke='white' stroke-width='1.5' fill='none' stroke-linecap='round' opacity='0.6'/>
+</svg></button>
+  </div>
+  <div id="content-zone" style="display:none;">
+    <div class="card">
+      <div style="display:flex;gap:6px;align-items:center;">
+      <button class="btn btn-play" id="btn-reecoute" style="display:none;flex:1;margin-top:0;" onclick="audioQ.currentTime=0;audioQ.play().catch(()=>{})">🔊 réécoute</button>
+      <button class="btn-ar-sound" id="btn-ar-reecoute" style="display:none;" onclick="playAR(UI_AR.reecoute)"><svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 28 28' width='18' height='18'>
+  <circle cx='14' cy='14' r='13' fill='#00c853' stroke='none'/>
+  <text x='14' y='18.5' text-anchor='middle' font-size='13' fill='white' font-family='serif' font-weight='bold'>+</text>
+  <path d='M20,9 Q23,14 20,19' stroke='white' stroke-width='1.8' fill='none' stroke-linecap='round'/>
+  <path d='M22,6.5 Q27,14 22,21.5' stroke='white' stroke-width='1.5' fill='none' stroke-linecap='round' opacity='0.6'/>
+</svg></button>
+    </div>
+      <div id="illus-zone" style="display:none;margin-top:8px;"></div>
+      <div id="read-word-display" style="display:none;font-size:1.9rem;font-weight:bold;color:#2c3e50;margin:10px 0;letter-spacing:2px;white-space:nowrap;"></div>
+      <div id="input-area" style="margin-top:10px;display:none;">
+        <div id="hint-illus-zone" style="display:none;margin-bottom:6px;"></div>
+        <div id="answer-display" class="answer-display"></div>
+        <div class="magnetic-keyboard" id="main-keyboard">
+          <div class="keyboard-rows" id="keyboard-rows"></div>
+          <div class="keyboard-row" style="margin-top:4px;display:flex;justify-content:center;gap:6px;">
+            <button class="mag-space" onclick="addChar(' ')">espace</button>
+            <button class="mag-delete" onclick="deleteChar()">⌫ effacer</button>
+          </div>
+        </div>
+      </div>
+      <div id="guided-area" style="margin-top:10px;display:none;">
+        <div id="hint-illus-zone-guided" style="display:none;margin-bottom:6px;"></div>
+        <div id="guided-word" class="guided-word"></div>
+        <p id="guided-hint" style="font-size:1rem;color:var(--secondary);margin:4px 0 8px;min-height:1.4rem;font-weight:bold;"></p>
+        <div class="magnetic-keyboard">
+          <div class="keyboard-rows" id="guided-keyboard-rows"></div>
+          <div class="keyboard-row" style="margin-top:4px;display:flex;justify-content:center;">
+            <button class="mag-delete" id="guided-del" onclick="guidedDelete()">⌫ effacer</button>
+          </div>
+        </div>
+      </div>
+      <div id="oral-area" style="margin-top:10px;display:none;"></div>
+    </div>
+    <div style="display:flex;gap:6px;align-items:center;">
+    <button id="btn-verify" class="btn btn-verify" style="display:none;flex:1;margin-top:7px;" onclick="handleVerify()">🔍 vérifie</button>
+    <button class="btn-ar-sound" id="btn-ar-verifie" style="display:none;" onclick="playAR(UI_AR.verifie)"><svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 28 28' width='18' height='18'>
+  <circle cx='14' cy='14' r='13' fill='#00c853' stroke='none'/>
+  <text x='14' y='18.5' text-anchor='middle' font-size='13' fill='white' font-family='serif' font-weight='bold'>+</text>
+  <path d='M20,9 Q23,14 20,19' stroke='white' stroke-width='1.8' fill='none' stroke-linecap='round'/>
+  <path d='M22,6.5 Q27,14 22,21.5' stroke='white' stroke-width='1.5' fill='none' stroke-linecap='round' opacity='0.6'/>
+</svg></button>
+  </div>
+    <div id="eval-zone" class="eval-box">
+      <div id="diff-display" class="diff-container"></div>
+      <div id="replay-zone"></div>
+      <div id="auto-eval" style="display:none;flex-direction:column;">
+        <div style="display:flex;gap:6px;align-items:center;">
+        <button id="btn-auto-continue" class="btn btn-continue" style="flex:1;;min-height:44px">continuer ➡️</button>
+        <button class="btn-ar-sound" onclick="playAR(UI_AR.continuer)"><svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 28 28' width='18' height='18'>
+  <circle cx='14' cy='14' r='13' fill='#00c853' stroke='none'/>
+  <text x='14' y='18.5' text-anchor='middle' font-size='13' fill='white' font-family='serif' font-weight='bold'>+</text>
+  <path d='M20,9 Q23,14 20,19' stroke='white' stroke-width='1.8' fill='none' stroke-linecap='round'/>
+  <path d='M22,6.5 Q27,14 22,21.5' stroke='white' stroke-width='1.5' fill='none' stroke-linecap='round' opacity='0.6'/>
+</svg></button>
+      </div>
+      </div>
+      <div id="manual-eval" style="display:none;flex-direction:column;gap:6px;">
+        <div style="display:flex;flex-direction:column;gap:8px;" id="manual-choices">
+          <div style="display:flex;gap:4px;align-items:center;flex:1;">
+            <button class="btn btn-ok" style="flex:1;" onclick="recordManual(true)">c'est bon ✓</button>
+            <button class="btn-ar-sound" onclick="playAR(UI_AR.cest_bon)"><svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 28 28' width='18' height='18'>
+  <circle cx='14' cy='14' r='13' fill='#00c853' stroke='none'/>
+  <text x='14' y='18.5' text-anchor='middle' font-size='13' fill='white' font-family='serif' font-weight='bold'>+</text>
+  <path d='M20,9 Q23,14 20,19' stroke='white' stroke-width='1.8' fill='none' stroke-linecap='round'/>
+  <path d='M22,6.5 Q27,14 22,21.5' stroke='white' stroke-width='1.5' fill='none' stroke-linecap='round' opacity='0.6'/>
+</svg></button>
+          </div>
+          <div style="display:flex;gap:4px;align-items:center;flex:1;">
+            <button class="btn btn-ko" style="flex:1;" onclick="recordManual(false)">à revoir ✗</button>
+            <button class="btn-ar-sound" onclick="playAR(UI_AR.a_revoir)"><svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 28 28' width='18' height='18'>
+  <circle cx='14' cy='14' r='13' fill='#00c853' stroke='none'/>
+  <text x='14' y='18.5' text-anchor='middle' font-size='13' fill='white' font-family='serif' font-weight='bold'>+</text>
+  <path d='M20,9 Q23,14 20,19' stroke='white' stroke-width='1.8' fill='none' stroke-linecap='round'/>
+  <path d='M22,6.5 Q27,14 22,21.5' stroke='white' stroke-width='1.5' fill='none' stroke-linecap='round' opacity='0.6'/>
+</svg></button>
+          </div>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center;">
+        <button class="btn btn-continue" id="btn-manual-continue" style="display:none;flex:1;margin-top:0;" onclick="doManualContinue()">continuer ➡️</button>
+        <button class="btn-ar-sound" id="btn-ar-manual-continue" style="display:none;" onclick="playAR(UI_AR.continuer)"><svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 28 28' width='18' height='18'>
+  <circle cx='14' cy='14' r='13' fill='#00c853' stroke='none'/>
+  <text x='14' y='18.5' text-anchor='middle' font-size='13' fill='white' font-family='serif' font-weight='bold'>+</text>
+  <path d='M20,9 Q23,14 20,19' stroke='white' stroke-width='1.8' fill='none' stroke-linecap='round'/>
+  <path d='M22,6.5 Q27,14 22,21.5' stroke='white' stroke-width='1.5' fill='none' stroke-linecap='round' opacity='0.6'/>
+</svg></button>
+      </div>
+      </div>
+    </div>
+  </div>
+  <div style="display:flex;gap:6px;align-items:center;margin-top:12px;">
+    <button class="btn btn-nav" style="margin-top:0;flex:1;" onclick="goMenu()">⬅️ changer d'activité</button>
+    <button class="btn-ar-sound" onclick="playAR(UI_AR.changer)"><svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 28 28' width='18' height='18'>
+  <circle cx='14' cy='14' r='13' fill='#00c853' stroke='none'/>
+  <text x='14' y='18.5' text-anchor='middle' font-size='13' fill='white' font-family='serif' font-weight='bold'>+</text>
+  <path d='M20,9 Q23,14 20,19' stroke='white' stroke-width='1.8' fill='none' stroke-linecap='round'/>
+  <path d='M22,6.5 Q27,14 22,21.5' stroke='white' stroke-width='1.5' fill='none' stroke-linecap='round' opacity='0.6'/>
+</svg></button>
+  </div>
+  <div class="footer">score : <b id="count-done">0</b> / <span id="total-val">0</span></div>
+</div>
+
+<!-- FIN -->
+<div id="end-screen">
+  <h2 id="end-title" style="margin-bottom:10px;"></h2>
+  <div id="reward-zone"></div>
+  <div id="error-options"></div>
+  <button class="btn btn-play" style="margin-top:15px;" onclick="goMenu()">🏠 retour au menu</button>
+</div>
+</div>
+
+<script>
+const VOYELLES=new Set(['a','â','à','e','é','è','ê','ë','i','î','ï','o','ô','œ','u','û','ù','y']);
+
+const ILLUSTRATIONS={
+"chat":`<img src="https://static.wixstatic.com/media/5bb4a0_9112e4c353bc40d898e016b9b84b7e41~mv2.jpg" class="word-illustration" >`,
+
+"jaune":`<img src="https://static.wixstatic.com/media/5bb4a0_882b867c2ede40c9bf1bb977f7008a89~mv2.jpg" class="word-illustration" >`,
+
+"cadeau":`<img src="https://static.wixstatic.com/media/5bb4a0_ccf51e610c5f4f458b2bdc28a14637a4~mv2.jpg" class="word-illustration" >`,
+
+"fleur":`<img src="https://static.wixstatic.com/media/5bb4a0_ef1c5691611a4aa8ab39a741c73b34a9~mv2.jpg" class="word-illustration" >`,
+
+"sœur":`<img src="https://static.wixstatic.com/media/5bb4a0_edb8844a660149e6a1291d0a86ab7da9~mv2.jpg" class="word-illustration" >`,
+
+"ours":`<img src="https://static.wixstatic.com/media/5bb4a0_1011f7a253fa43768582da7e80baf871~mv2.jpg" class="word-illustration" >`,
+
+"lapin":`<img src="https://static.wixstatic.com/media/5bb4a0_fbb5de5f0b174735882ba0049b434a9b~mv2.jpg" class="word-illustration" >`,
+
+"un":`<img src="https://static.wixstatic.com/media/5bb4a0_cecfb2b2469b4b328cb0875e7a089b48~mv2.jpg" class="word-illustration" >`,
+
+"nez":`<img src="https://static.wixstatic.com/media/5bb4a0_553fe0e1ae314cd692a4035779b0bcf3~mv2.jpg" class="word-illustration" >`,
+
+"déjeuner":`<img src="https://static.wixstatic.com/media/5bb4a0_6041c96b89bd48d19a19e4b700ed153e~mv2.png" class="word-illustration" >`
+};
+
+
+const HINTS={
+"chat":"https://static.wixstatic.com/media/5bb4a0_9e703986590b4c0ba1227ced1256bf0a~mv2.jpg",
+"jaune":"https://static.wixstatic.com/media/5bb4a0_c9d837835a514870b3822ebbd9c47770~mv2.jpg",
+"cadeau":"https://static.wixstatic.com/media/5bb4a0_d4149c59afc54c8481f33950e4a9eafc~mv2.png",
+"fleur":"https://static.wixstatic.com/media/5bb4a0_7f5ed6c6ff264cbda879902ddd42327a~mv2.jpg",
+"sœur":"https://static.wixstatic.com/media/5bb4a0_1efaa79c84db4a8d970e06cbaa75d068~mv2.jpg",
+"ours":"https://static.wixstatic.com/media/5bb4a0_338b5107090a41cd81cabd34659a55db~mv2.jpg",
+"lapin":"https://static.wixstatic.com/media/5bb4a0_eec1efa804414ae7bc1652779b8521d1~mv2.jpg",
+"un":"https://static.wixstatic.com/media/5bb4a0_004b75bb61614841ad161b675e10e17a~mv2.jpg",
+"nez":"https://static.wixstatic.com/media/5bb4a0_5a8cf29169b74993a3ff7da79f29f4a2~mv2.jpg",
+"déjeuner":"https://static.wixstatic.com/media/5bb4a0_906d0b40125745a385fa107854e044ce~mv2.jpg",
+};
+const wordsData=[
+  {target:"chat", frA:"https://static.wixstatic.com/mp3/5bb4a0_fae83444757a44ae8ea7fe629b96f0db.mp3", ep:"https://static.wixstatic.com/mp3/5bb4a0_2957a42e680c4bc19161436ab6d1d168.mp3", hint:"https://static.wixstatic.com/media/5bb4a0_6041c96b89bd48d19a19e4b700ed153e~mv2.png"},
+  {target:"jaune", frA:"https://static.wixstatic.com/mp3/5bb4a0_85c7a2c5c1a34f5485e1ad992bbc23e9.mp3", ep:"https://static.wixstatic.com/mp3/5bb4a0_baf6397264eb47dba64aa1b38f998516.mp3", hint:"https://static.wixstatic.com/media/5bb4a0_6041c96b89bd48d19a19e4b700ed153e~mv2.png"},
+  {target:"cadeau", frA:"https://static.wixstatic.com/mp3/5bb4a0_af39913eca92419e94b1d4c10343a7f1.mp3", ep:"https://static.wixstatic.com/mp3/5bb4a0_f8a911cd772e45e489f6bbbd00dc8251.mp3", hint:"https://static.wixstatic.com/media/5bb4a0_6041c96b89bd48d19a19e4b700ed153e~mv2.png"},
+  {target:"fleur", frA:"https://static.wixstatic.com/mp3/5bb4a0_181009a87456412b8dfdcdde1686fb0d.mp3", ep:"https://static.wixstatic.com/mp3/5bb4a0_3b12af20366d432395103389837eea9a.mp3", hint:"https://static.wixstatic.com/media/5bb4a0_6041c96b89bd48d19a19e4b700ed153e~mv2.png"},
+  {target:"sœur", frA:"https://static.wixstatic.com/mp3/5bb4a0_615743474b3c4d63a2ec22b846626c34.mp3", ep:"https://static.wixstatic.com/mp3/5bb4a0_7ca901ed966648939c854c3fcff1cc61.mp3", hint:"https://static.wixstatic.com/media/5bb4a0_6041c96b89bd48d19a19e4b700ed153e~mv2.png"},
+  {target:"ours", frA:"https://static.wixstatic.com/mp3/5bb4a0_3065e31ed41243f2b460fb0fa9832743.mp3", ep:"https://static.wixstatic.com/mp3/5bb4a0_fe6f12aeae9546af9ecb828aaae9c674.mp3", hint:"https://static.wixstatic.com/media/5bb4a0_6041c96b89bd48d19a19e4b700ed153e~mv2.png"},
+  {target:"lapin", frA:"https://static.wixstatic.com/mp3/5bb4a0_2eb0fb72285b4727a70315bf0c0dec47.mp3", ep:"https://static.wixstatic.com/mp3/5bb4a0_f4c27dee9200443ab850a1e5fe62eff3.mp3", hint:"https://static.wixstatic.com/media/5bb4a0_6041c96b89bd48d19a19e4b700ed153e~mv2.png"},
+  {target:"un", frA:"https://static.wixstatic.com/mp3/5bb4a0_692e0ab497574df2887764d2f7344f68.mp3", ep:"https://static.wixstatic.com/mp3/5bb4a0_05af61a80109423781f814f40e4d80f7.mp3", hint:"https://static.wixstatic.com/media/5bb4a0_6041c96b89bd48d19a19e4b700ed153e~mv2.png"},
+  {target:"nez", frA:"https://static.wixstatic.com/mp3/5bb4a0_04f40bf9160942cd875b30676118cc4a.mp3", ep:"https://static.wixstatic.com/mp3/5bb4a0_f3772e0cbedf4c52b9f8a83ccf5b7cf1.mp3", hint:"https://static.wixstatic.com/media/5bb4a0_6041c96b89bd48d19a19e4b700ed153e~mv2.png"},
+  {target:"déjeuner", frA:"https://static.wixstatic.com/mp3/5bb4a0_49cf0532a2564fed98b97df55be4eeaa.mp3", ep:"https://static.wixstatic.com/mp3/5bb4a0_c3b5ed899c2a46c3811ce9e2f5ae0f4d.mp3", hint:"https://static.wixstatic.com/media/5bb4a0_3d3fd2842df4404fa43d71bbfadfac96~mv2.png"}
+];
+
+const KEYBOARD_ROWS=[['a','â','à','b','c','d','e','é','è','ê','ë'],['f','g','h','i','î','ï','j','k','l','m','n'],['o','ô','œ','p','q','r','s','t','u','û','ù','v'],['w','x','y','z']];
+const LABELS={'copie':'👀+🔤  copie','répète':'🎙️  répète','lis':'👁️  lis','écris les lettres que tu entends':'🔤  écris les lettres','écris le ou les mots que tu entends':'✏️  écris le ou les mots'};
+// Sons arabe au survol — remplace xxxmp3 par l'URL Wix du son
+const LABELS_AR={
+  'copie':                               'https://static.wixstatic.com/mp3/5bb4a0_618388078f554fbcb921c1477c6b6f1d.mp3',
+  'répète':                              'https://static.wixstatic.com/mp3/5bb4a0_b069453e2f254060a15f374dea87e545.mp3',
+  'lis':                                 'https://static.wixstatic.com/mp3/5bb4a0_4f334829b5a74b6b924560bc73b37f3e.mp3',
+  'écris les lettres que tu entends':    'https://static.wixstatic.com/mp3/5bb4a0_379d383b39304ea3aa8b4422a688b81d.mp3',
+  'écris le ou les mots que tu entends': 'https://static.wixstatic.com/mp3/5bb4a0_59fa8026399340a19b096ae4b3bea729.mp3',
+};
+const UI_AR={
+  ecoute:      'https://static.wixstatic.com/mp3/5bb4a0_bd22426df6984a8da7a0d543cae531fc.mp3',
+  reecoute:    'https://static.wixstatic.com/mp3/5bb4a0_9537dc16860f49888e25c4d433baa7d4.mp3',
+  verifie:     'https://static.wixstatic.com/mp3/5bb4a0_8962ee2d5251445ebbee57b9e1898520.mp3',
+  continuer:   'https://static.wixstatic.com/mp3/5bb4a0_f01fdcf97c34492f81c7530ee5c0b683.mp3',
+  cest_bon:    'https://static.wixstatic.com/mp3/5bb4a0_d1e3583ccea04656aa9654ef299cfbc4.mp3',
+  a_revoir:    'https://static.wixstatic.com/mp3/5bb4a0_1615f05276934edcbdbd108473eb3101.mp3',
+  parle:       'https://static.wixstatic.com/mp3/5bb4a0_2e74b1e8409b4f8392107f20cdade6f3.mp3',
+  changer:     'https://static.wixstatic.com/mp3/5bb4a0_6d1bf1eb649d44f79e913dfb2630db77.mp3',
+  ecoute_mot:  'https://static.wixstatic.com/mp3/5bb4a0_0991c4dc13144577bf8a919a90776c1a.mp3',
+};
+const scoreBase={'lis':5,'répète':5,'écris les lettres que tu entends':5,'écris le ou les mots que tu entends':5,'copie':5};
+
+let deck=[],errorPile=[],successCount=0,totalInSession=0,errorPass=0;
+let audioQ=new Audio(),audioR=new Audio(),currentMode='';
+let currentAnswer=[],guidedTarget='',guidedIndex=0;
+
+function stripAccents(s){return s.normalize('NFD').replace(/[\u0300-\u036f]/g,'');}
+function isVowel(ch){return VOYELLES.has(stripAccents(ch.toLowerCase()));}
+function isCorrectStrict(a,b){return a.toLowerCase()===b.toLowerCase();}
+
+// rubriques avec rouge à la saisie EN TEMPS RÉEL
+// pendant l'exercice principal : jamais de rouge en temps réel
+
+function soundOk(){}
+function soundKo(){}
+
+function buildKeyboard(cid,fn){
+  const rows=document.getElementById(cid);rows.innerHTML='';
+  KEYBOARD_ROWS.forEach(row=>{
+    const d=document.createElement('div');d.className='keyboard-row';
+    row.forEach(l=>{
+      const b=document.createElement('button');
+      b.className='mag-letter '+(isVowel(l)?'vowel':'consonant');
+      b.textContent=l;b.onclick=()=>fn(l);d.appendChild(b);
+    });
+    rows.appendChild(d);
+  });
+}
+
+// answer display SANS couleur en temps réel (exercice principal)
+function addChar(ch){currentAnswer.push(ch);renderAD(false);if(navigator.vibrate)navigator.vibrate(18);}
+function deleteChar(){currentAnswer.pop();renderAD(false);}
+
+function renderAD(liveColor, target_override){
+  const d=document.getElementById('answer-display');d.innerHTML='';
+  if(currentAnswer.length===0)return;
+  const target=target_override||(deck.length?deck[0].target:'');
+  // wrapper unique — white-space:nowrap garanti par CSS
+  const wrap=document.createElement('span');wrap.className='answer-word';
+  currentAnswer.forEach((ch,i)=>{
+    if(ch===' '){
+      const sp=document.createElement('span');
+      sp.style.cssText='display:inline-block;width:0.4em;';
+      wrap.appendChild(sp);
+    } else {
+      const span=document.createElement('span');span.className='answer-char';
+      span.textContent=ch;
+      if(liveColor){
+        if(i<target.length&&ch.toLowerCase()!==target[i].toLowerCase()) span.classList.add('live-ko');
+        else if(i>=target.length) span.classList.add('live-ko');
+      }
+      span.onclick=()=>{currentAnswer.splice(i,1);renderAD(liveColor,target_override);};
+      wrap.appendChild(span);
+    }
+  });
+  d.appendChild(wrap);
+}
+
+function getAV(){return currentAnswer.join('').trim();}
+function setKBdis(v){document.querySelectorAll('#keyboard-rows .mag-letter,.mag-delete,.mag-space').forEach(b=>b.disabled=v);}
+
+// correction lettre par lettre — stricte et positionnelle (espaces inclus)
+// pour écris_mots : lettres en trop dans un mot détectées via alignement LCS
+function buildCorrectionHtml(typed, target, mode){
+  if(mode==='ecrit_mots') return buildCorrectionMots(typed, target);
+  // mode standard : comparaison positionnelle stricte, espaces inclus
+  const s1=typed.toLowerCase();
+  const s2=target.toLowerCase();
+  const len=Math.max(s1.length,s2.length);
+  let html='';
+  // helper : rend un caractère visible (espace → petit tiret)
+  function renderCh(ch,cls){
+    if(ch===' ') return `<span class="${cls}" style="display:inline-block;width:14px;border-bottom:2px solid currentColor;margin:0 1px;vertical-align:middle;"></span>`;
+    return `<span class="${cls}">${ch}</span>`;
+  }
+  for(let i=0;i<len;i++){
+    if(i<s2.length){
+      if(i<s1.length){
+        if(s1[i]===s2[i]) html+=renderCh(s2[i],'char-correct');
+        else html+=renderCh(s1[i],'char-wrong');
+      } else {
+        html+=renderCh(s2[i],'char-missing');
+      }
+    } else {
+      html+=renderCh(s1[i],'char-wrong');
+    }
+  }
+  return html;
+}
+
+// pour écris_mots : aligne mot par mot, détecte les lettres en trop
+function buildCorrectionMots(typed, target){
+  const wordsT=typed.toLowerCase().split(' ');
+  const wordsS=target.toLowerCase().split(' ');
+  const len=Math.max(wordsT.length,wordsS.length);
+  let parts=[];
+  for(let w=0;w<len;w++){
+    if(w>0) parts.push('<span style="display:inline-block;width:10px;"></span>');
+    const tw=wordsT[w]||'';
+    const sw=wordsS[w]||'';
+    // LCS pour aligner les lettres du mot
+    parts.push(alignWord(tw,sw));
+  }
+  return parts.join('');
+}
+
+// aligne deux mots lettre par lettre via LCS (longest common subsequence)
+function alignWord(typed, target){
+  const m=typed.length, n=target.length;
+  // construire la table LCS
+  const dp=Array.from({length:m+1},()=>new Array(n+1).fill(0));
+  for(let i=1;i<=m;i++) for(let j=1;j<=n;j++){
+    if(typed[i-1]===target[j-1]) dp[i][j]=dp[i-1][j-1]+1;
+    else dp[i][j]=Math.max(dp[i-1][j],dp[i][j-1]);
+  }
+  // remonter le chemin
+  let i=m,j=n,res=[];
+  while(i>0||j>0){
+    if(i>0&&j>0&&typed[i-1]===target[j-1]){
+      res.unshift({type:'ok',ch:target[j-1]});i--;j--;
+    } else if(j>0&&(i===0||dp[i][j-1]>=dp[i-1][j])){
+      res.unshift({type:'missing',ch:target[j-1]});j--;
+    } else {
+      res.unshift({type:'wrong',ch:typed[i-1]});i--;
+    }
+  }
+  return res.map(r=>{
+    if(r.type==='ok') return `<span class="char-correct">${r.ch}</span>`;
+    if(r.type==='wrong') return `<span class="char-wrong">${r.ch}</span>`;
+    return `<span class="char-missing">${r.ch}</span>`;
+  }).join('');
+}
+
+// copie
+function buildGuidedDisplay(word){
+  guidedTarget=word;guidedIndex=0;
+  const z=document.getElementById('guided-word');z.innerHTML='';
+  [...word].forEach((ch,i)=>{
+    if(ch===' '){const s=document.createElement('div');s.className='guided-cell space';z.appendChild(s);}
+    else{
+      const c=document.createElement('div');
+      c.className='guided-cell'+(i===0?' active':'');
+      c.id='gc-'+i;
+      // clic sur cellule validée = retour arrière jusqu'à cette position
+      c.onclick=()=>{
+        if(c.classList.contains('ok')&&guidedIndex>i){
+          for(let k=guidedIndex-1;k>=i;k--){
+            const cc=document.getElementById('gc-'+k);
+            if(cc){cc.textContent='';cc.className='guided-cell';}
+          }
+          guidedIndex=i;
+          document.querySelectorAll('.guided-cell').forEach(x=>x.classList.remove('active','ko'));
+          c.classList.add('active');
+          document.getElementById('guided-hint').textContent='écris la lettre : "'+guidedTarget[i]+'"';
+        }
+      };
+      z.appendChild(c);
+    }
+  });
+  updateGuidedHint();
+}
+function updateGuidedHint(){
+  const h=document.getElementById('guided-hint');
+  while(guidedIndex<guidedTarget.length&&guidedTarget[guidedIndex]===' '){
+    const c=document.getElementById('gc-'+guidedIndex);if(c){c.textContent=' ';c.className='guided-cell ok';}guidedIndex++;
+  }
+  if(guidedIndex>=guidedTarget.length){
+    h.textContent='';
+    document.querySelectorAll('#guided-keyboard-rows .mag-letter,#guided-del').forEach(b=>b.disabled=true);
+    document.getElementById('eval-zone').style.display='flex';
+    document.getElementById('auto-eval').style.display='flex';
+    const b=document.getElementById('btn-auto-continue');
+    b.innerText='continuer ➡️';b.onclick=()=>processResult(true);
+    return;
+  }
+  h.textContent='écris la lettre : "'+guidedTarget[guidedIndex]+'"';
+  document.querySelectorAll('.guided-cell').forEach(c=>c.classList.remove('active','ko'));
+  const a=document.getElementById('gc-'+guidedIndex);if(a)a.classList.add('active');
+}
+function guidedPress(l){if(navigator.vibrate)navigator.vibrate(18);
+  if(guidedIndex>=guidedTarget.length)return;
+  const exp=guidedTarget[guidedIndex];
+  const c=document.getElementById('gc-'+guidedIndex);
+  // strict : l'accent doit être exact
+  if(l.toLowerCase()===exp.toLowerCase()){
+    if(c){c.textContent=exp;c.className='guided-cell ok';}guidedIndex++;updateGuidedHint();
+  } else {
+    if(c){c.classList.add('ko');setTimeout(()=>{c.classList.remove('ko');c.classList.add('active');},400);}
+  }
+}
+function guidedDelete(){
+  if(guidedIndex<=0)return;guidedIndex--;
+  while(guidedIndex>0&&guidedTarget[guidedIndex]===' ')guidedIndex--;
+  const c=document.getElementById('gc-'+guidedIndex);
+  if(c){c.textContent='';c.className='guided-cell active';}
+  for(let k=guidedIndex+1;k<guidedTarget.length;k++){const cc=document.getElementById('gc-'+k);if(cc){cc.textContent='';cc.className='guided-cell';}}
+  document.getElementById('guided-hint').textContent='écris la lettre : "'+guidedTarget[guidedIndex]+'"';
+}
+
+function showIllus(word){
+  const z=document.getElementById('illus-zone'),svg=ILLUSTRATIONS[word];
+  if(svg){
+    z.innerHTML=svg;
+    z.style.display='block';
+    const img=z.querySelector('img');
+    if(img){
+      img.style.cursor='pointer';
+      img.title='🔊 écouter en arabe (Forvo)';
+      img.onclick=()=>window.open('https://forvo.com/search/'+encodeURIComponent(word)+'/ar/','_blank');
+    }
+  } else z.style.display='none';
+}
+
+function showHint(word){
+  const z=document.getElementById('illus-zone');
+  const url=HINTS[word];
+  if(url&&url!=='xxx'){
+    z.innerHTML=`<img src="${url}" class="word-illustration" alt="" style="cursor:pointer;" title="🔊 écouter en arabe (Forvo)" onclick="window.open('https://forvo.com/search/'+encodeURIComponent('${word}')+'/ar/','_blank')">`;
+    z.style.display='block';
+  } else {
+    showIllus(word);
+  }
+}
+
+function makeTipBtn(id, emoji, frLabel, arSrc, extraClass){
+  const el = document.getElementById(id);
+  if(!el) return;
+  el.classList.add('tip');
+  // injecter le tooltip à l'intérieur
+  if(!el.querySelector('.tiptext')){
+    const tip = document.createElement('span');
+    tip.className = 'tiptext';
+    tip.innerHTML = frLabel + (arSrc && arSrc !== 'xxxmp3' ? ' 🔊' : '');
+    if(arSrc && arSrc !== 'xxxmp3'){
+      tip.style.cursor = 'pointer';
+      tip.onclick = (e)=>{e.stopPropagation(); new Audio(arSrc).play().catch(()=>{});};
+    }
+    el.appendChild(tip);
+  }
+}
+
+function arSoundIcon(){
+  return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 28 28" width="18" height="18"><circle cx="14" cy="14" r="13" fill="#27ae60"/><text x="14" y="18.5" text-anchor="middle" font-size="13" fill="white" font-family="serif" font-weight="bold">+</text><path d="M20,9 Q23,14 20,19" stroke="white" stroke-width="1.8" fill="none" stroke-linecap="round"/><path d="M22,6.5 Q27,14 22,21.5" stroke="white" stroke-width="1.5" fill="none" stroke-linecap="round" opacity="0.6"/></svg>';
+}
+function playAR(mp3){if(mp3&&mp3!=='xxxmp3')new Audio(mp3).play().catch(()=>{});}
+
+function applyArTooltips(){
+  // Met à jour le son du bouton 🔈 réécoute selon le contexte (réécoute ou écoute le mot)
+  const task=deck.length?deck[0]:null;
+  const bar=document.getElementById('btn-ar-reecoute');
+  if(bar&&task){
+    if(task.type==='guide'||task.type==='lit') bar.onclick=()=>playAR(UI_AR.ecoute_mot);
+    else bar.onclick=()=>playAR(UI_AR.reecoute);
+  }
+}
+function goMenu(){
+  document.getElementById('game-zone').style.display='none';
+  document.getElementById('end-screen').style.display='none';
+  document.getElementById('menu-initial').style.display='block';
+}
+
+function startGame(mode){
+  currentMode=mode;
+  document.getElementById('menu-initial').style.display='none';
+  document.getElementById('game-zone').style.display='block';
+  deck=[];
+  wordsData.forEach(w=>{
+    if(mode==='lis') deck.push({type:'lit',q:w.frA,target:w.target});
+    else if(mode==='répète') deck.push({type:'oral',q:w.frA,r:w.frA,target:w.target});
+    else if(mode==='écris les lettres que tu entends') deck.push({type:'ecrit_lettres',q:w.ep,target:w.target});
+    else if(mode==='écris le ou les mots que tu entends') deck.push({type:'ecrit_mots',q:w.frA,target:w.target});
+    else if(mode==='copie') deck.push({type:'guide',q:w.frA,target:w.target});
+  });
+  // double mélange pour un ordre vraiment aléatoire
+  for(let pass=0;pass<2;pass++){for(let i=deck.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[deck[i],deck[j]]=[deck[j],deck[i]];}}
+  // éviter deux fois le même mot consécutivement (confort apprenant)
+  for(let i=0;i<deck.length-1;i++){if(deck[i].target===deck[i+1].target){for(let j=i+2;j<deck.length;j++){if(deck[j].target!==deck[i].target){[deck[i+1],deck[j]]=[deck[j],deck[i+1]];break;}}}}
+  totalInSession=deck.length;successCount=0;errorPile=[];errorPass=0;
+  buildKeyboard('keyboard-rows',addChar);
+  buildKeyboard('guided-keyboard-rows',guidedPress);
+  initCard();
+}
+
+function resetEval(){
+  document.getElementById('eval-zone').style.display='none';
+  document.getElementById('auto-eval').style.display='none';
+  document.getElementById('manual-eval').style.display='none';
+  document.getElementById('btn-manual-continue').style.display='none';const _bamc2=document.getElementById('btn-ar-manual-continue');if(_bamc2)_bamc2.style.display='none';
+  document.getElementById('manual-choices').querySelectorAll('button').forEach(b=>b.disabled=false);
+  document.getElementById('diff-display').innerHTML='';
+  document.getElementById('replay-zone').innerHTML='';
+}
+
+let _manualResult=true;
+function recordManual(isOk){
+  _manualResult=isOk;
+  document.getElementById('manual-choices').querySelectorAll('button').forEach(b=>b.disabled=true);
+  document.getElementById('btn-manual-continue').style.display='flex';const _bamc=document.getElementById('btn-ar-manual-continue');if(_bamc)_bamc.style.display='flex';
+}
+function doManualContinue(){processResult(_manualResult);}
+
+function initCard(){
+  if(deck.length===0){showEnd();return;}
+  document.getElementById('content-zone').style.display='none';
+  document.getElementById('btn-load-question').style.display='flex';
+  const task=deck[0];
+  const rz=document.getElementById('rubrique-display');
+  rz.innerText='✔ '+(LABELS[currentMode]||currentMode)+' — '+successCount+'/'+totalInSession;
+  const lb=LABELS_AR[currentMode];
+  window._currentRubriqueMp3=lb||null;
+  const brub=document.getElementById('btn-ar-rubrique');
+  if(brub){brub.style.display=lb?'inline-flex':'none';}
+  document.getElementById('total-val').innerText=totalInSession;
+  document.getElementById('count-done').innerText=successCount;
+  // barre de progression
+  const pct=totalInSession>0?Math.round((successCount/(totalInSession))*100):0;
+  document.getElementById('progress-fill').style.width=pct+'%';
+  audioQ.src=task.q;audioQ.currentTime=0;
+  if(task.r)audioR.src=task.r;
+  document.getElementById('btn-load-question').innerText='🔊 écoute';
+  if(task.type==='lit'||task.type==='guide'){document.getElementById('btn-load-question').style.display='none';const _bae=document.getElementById('btn-ar-ecoute');if(_bae)_bae.style.display='none';loadCurrentTask();}
+  else{applyArTooltips();}
+}
+
+function loadCurrentTask(){
+  const task=deck[0];currentAnswer=[];
+  document.getElementById('btn-load-question').style.display='none';
+  document.getElementById('content-zone').style.display='block';
+  document.getElementById('illus-zone').style.display='none';
+  document.getElementById('input-area').style.display='none';
+  document.getElementById('guided-area').style.display='none';
+  document.getElementById('oral-area').style.display='none';
+  document.getElementById('read-word-display').style.display='none';
+  document.getElementById('btn-verify').style.display='none';const _bav2=document.getElementById('btn-ar-verifie');if(_bav2)_bav2.style.display='none';
+  document.getElementById('btn-reecoute').style.display='none';const _bar2=document.getElementById('btn-ar-reecoute');if(_bar2)_bar2.style.display='none';
+  resetEval();
+
+  if(task.type==='lit'){
+    showIllus(task.target);
+    document.getElementById('btn-reecoute').style.display='none';const _bar2=document.getElementById('btn-ar-reecoute');if(_bar2)_bar2.style.display='none';
+    document.getElementById('btn-verify').innerText='🔍 vérifie';
+    document.getElementById('btn-verify').style.display='flex';const _bav=document.getElementById('btn-ar-verifie');if(_bav)_bav.style.display='flex';
+
+  } else if(task.type==='guide'){
+    document.getElementById('btn-reecoute').style.display='flex';const _bar=document.getElementById('btn-ar-reecoute');if(_bar)_bar.style.display='flex';
+    document.getElementById('btn-reecoute').innerText='🔊 écoute le mot';
+    document.getElementById('guided-area').style.display='block';
+    showIllus(task.target);
+    buildGuidedDisplay(task.target);
+    document.querySelectorAll('#guided-keyboard-rows .mag-letter,#guided-del').forEach(b=>b.disabled=false);
+    const hzg=document.getElementById('hint-illus-zone-guided');
+    if(task.hint&&task.hint!=='https://static.wixstatic.com/media/5bb4a0_3d3fd2842df4404fa43d71bbfadfac96~mv2.png'){hzg.innerHTML=`<img src="${task.hint}" class="hint-illustration" alt="">`;hzg.style.display='block';}
+    else{hzg.innerHTML='';hzg.style.display='none';}
+    audioQ.currentTime=0;audioQ.play().catch(()=>{});
+
+  } else if(task.type==='ecrit_lettres'||task.type==='ecrit_mots'){
+    const _baeE=document.getElementById('btn-ar-ecoute');if(_baeE)_baeE.style.display='none';
+    document.getElementById('btn-reecoute').style.display='flex';const _bar=document.getElementById('btn-ar-reecoute');if(_bar)_bar.style.display='flex';
+    document.getElementById('btn-reecoute').innerText='🔊 réécoute';
+    document.getElementById('input-area').style.display='block';
+    document.getElementById('main-keyboard').style.display='block';
+    document.getElementById('btn-verify').innerText='🔍 vérifie';
+    document.getElementById('btn-verify').style.display='flex';const _bav=document.getElementById('btn-ar-verifie');if(_bav)_bav.style.display='flex';
+    setKBdis(false);
+    renderAD(false);
+    showHint(task.target);
+    audioQ.currentTime=0;audioQ.play().catch(()=>{});
+  } else { // oral
+    document.getElementById('btn-reecoute').style.display='flex';const _bar=document.getElementById('btn-ar-reecoute');if(_bar)_bar.style.display='flex';
+    document.getElementById('btn-reecoute').innerText='🔊 réécoute';
+    const oa=document.getElementById('oral-area');oa.style.display='block';
+    showIllus(task.target);
+    if(currentMode==='répète'){
+      oa.innerHTML='<div style="display:flex;gap:8px;align-items:center;"><div style="font-weight:bold;font-size:1.3rem;background:var(--action);color:white;padding:12px;border-radius:13px;flex:1;">🎙️ parle</div><button class="btn-ar-sound" onclick="playAR(UI_AR.parle)">'+arSoundIcon()+'</button></div>';
+      document.getElementById('eval-zone').style.display='flex';
+      document.getElementById('auto-eval').style.display='flex';
+      const b=document.getElementById('btn-auto-continue');
+      b.innerText='continuer ➡️';b.onclick=()=>processResult(true);
+    }
+    audioQ.currentTime=0;audioQ.play().catch(()=>{});
+  }
+  applyArTooltips();
+}
+
+function playAudio(t){
+  if(t==='Q'){if(currentMode==='écris les lettres que tu entends')audioQ.play().catch(()=>{});else{audioQ.currentTime=0;audioQ.play().catch(()=>{});}}
+  else audioR.play().catch(()=>{});
+}
+
+function handleVerify(){
+  const task=deck[0];
+  document.getElementById('btn-verify').style.display='none';const _bav2=document.getElementById('btn-ar-verifie');if(_bav2)_bav2.style.display='none';
+  document.getElementById('eval-zone').style.display='flex';
+
+  if(task.type==='lit'){
+    document.getElementById('btn-reecoute').style.display='flex';const _bar=document.getElementById('btn-ar-reecoute');if(_bar)_bar.style.display='flex';
+    document.getElementById('btn-reecoute').innerText='🔊 écoute le mot';
+    document.getElementById('btn-reecoute').onclick=function(){audioQ.currentTime=0;audioQ.play().catch(()=>{});};
+    document.getElementById('manual-eval').style.display='flex';
+
+  } else if(task.type==='ecrit_lettres'||task.type==='ecrit_mots'){
+    // correction lettre par lettre + continuer (l'app décide)
+    const val=getAV();
+    const isOk=isCorrectStrict(val,task.target);
+    document.getElementById('diff-display').innerHTML=buildCorrectionMots(val,task.target);
+    document.getElementById('main-keyboard').style.display='none';
+    setKBdis(true);
+    document.getElementById('auto-eval').style.display='flex';
+    const b=document.getElementById('btn-auto-continue');
+    b.innerText='continuer ➡️';b.onclick=()=>processResult(isOk);
+  }
+}
+
+// mini clavier unifié — liveRed=rouge à la saisie
+function buildMiniKB(wid,target,audioSrc,liveRed){
+  const wrap=document.getElementById(wid);if(!wrap)return;
+  let ma=[];
+  const did=wid+'-d',rid=wid+'-r';
+  wrap.innerHTML=`
+    <div id="${did}" style="min-height:44px;border:2px dashed #dee2e6;border-radius:9px;display:flex;align-items:center;justify-content:center;white-space:nowrap;overflow-x:auto;background:#f9f9f9;padding:5px;gap:2px;margin-bottom:5px;font-size:1.1rem;font-family:'Courier New',monospace;"></div>
+    <div style="background:#ecf0f1;border-radius:11px;padding:7px 5px;">
+      <div id="${wid}-rows"></div>
+      <div style="display:flex;justify-content:center;gap:5px;margin-top:3px;">
+        <button style="width:60px;height:26px;background:white;border:1px solid #bdc3c7;border-radius:6px;cursor:pointer;font-size:.65rem;color:#7f8c8d;" id="${wid}-sp">espace</button>
+        <button style="padding:0 7px;background:#7f8c8d;color:white;font-size:.7rem;height:26px;border-radius:6px;border:none;cursor:pointer;font-weight:bold;" id="${wid}-del">⌫</button>
+      </div>
+    </div>
+    <button style="width:100%;margin-top:5px;padding:6px;background:var(--action);color:white;border:none;border-radius:9px;font-size:.85rem;font-weight:bold;cursor:pointer;" id="${wid}-chk">🔍 vérifie</button>
+    <div id="${rid}" class="diff-container" style="margin-top:6px;font-size:1.1rem;flex-wrap:nowrap;overflow-x:auto;"></div>`;
+  _fillMiniRows(wid,target,ma,did,liveRed);
+  document.getElementById(wid+'-chk').onclick=()=>{
+    const v=ma.join('').trim(),r=document.getElementById(rid);
+    // toujours LCS pour la correction finale
+    r.innerHTML=buildCorrectionMots(v,target);
+    if(isCorrectStrict(v,target)){const s=document.createElement('span');s.textContent=' ✅';r.appendChild(s);document.getElementById(wid+'-chk').textContent='⭐ bravo !';}
+  };
+}
+
+
+
+function processResult(isOk){
+  const task=deck.shift();
+  if(isOk){
+    successCount++;
+    soundOk();
+  } else {
+    soundKo();
+    errorPile.push(task);
+  }
+  if(deck.length===0){
+    if(errorPile.length>0&&errorPass<2){
+      errorPass++;
+      deck=errorPile.splice(0);
+      for(let i=deck.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[deck[i],deck[j]]=[deck[j],deck[i]];}
+    } else {
+      showEnd();return;
+    }
+  }
+  initCard();
+}
+
+function showEnd(){
+  document.getElementById('game-zone').style.display='none';
+  const es=document.getElementById('end-screen');es.style.display='block';
+  const pct=totalInSession>0?Math.round((successCount/totalInSession)*100):0;
+  document.getElementById('end-title').innerText=
+    pct===100?'🌟 Parfait !':pct>=80?'👏 Bravo !':pct>=50?'💪 Continue !':'📚 À retravailler';
+  document.getElementById('reward-zone').innerHTML=
+    `<div class="score-final">Score : ${successCount} / ${totalInSession} (${pct}%)</div>`;
+  const opt=document.getElementById('error-options');opt.innerHTML='';
+  if(errorPile.length>0){
+    const title=document.createElement('p');
+    title.style.cssText='font-size:.9rem;color:var(--error);font-weight:bold;margin:10px 0 6px;';
+    title.textContent='Mots à revoir :';opt.appendChild(title);
+    const ed=document.createElement('div');ed.style.cssText='display:flex;flex-direction:column;gap:8px;';
+    errorPile.forEach((task)=>{
+      const d=document.createElement('div');
+      d.style.cssText='background:#fff5f5;border:1px solid #f5c6cb;border-radius:12px;padding:10px;text-align:left;';
+      d.innerHTML=`<div style="font-size:1.1rem;font-weight:bold;color:#2c3e50;margin-bottom:6px;">${task.target}</div>
+        <button class="btn btn-play" style="margin-bottom:6px;" onclick="(function(){new Audio('${task.q}').play();}())">🔊 réécoute</button>`;
+      ed.appendChild(d);
+    });
+    opt.appendChild(ed);
+  }
+}
+
+function _fillMiniRows(wid,target,ma,did,liveRed){
+  const re=document.getElementById(wid+'-rows');re.innerHTML='';
+  KEYBOARD_ROWS.forEach(row=>{
+    const d=document.createElement('div');d.style.cssText='display:flex;justify-content:center;gap:3px;flex-wrap:wrap;margin-bottom:3px;';
+    row.forEach(l=>{
+      const b=document.createElement('button');
+      b.style.cssText=`display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:6px;font-size:.78rem;font-weight:bold;cursor:pointer;border:none;box-shadow:0 2px 0 rgba(0,0,0,.2);flex-shrink:0;background:${isVowel(l)?'#8e44ad':'#d35400'};color:white;`;
+      b.textContent=l;b.onclick=()=>{ma.push(l);rm();};d.appendChild(b);
+    });
+    re.appendChild(d);
+  });
+  document.getElementById(wid+'-sp').onclick=()=>{ma.push(' ');rm();};
+  document.getElementById(wid+'-del').onclick=()=>{ma.pop();rm();};
+  function rm(){
+    const d=document.getElementById(did);d.innerHTML='';
+    ma.forEach((ch,i)=>{
+      if(ch===' '){const sp=document.createElement('span');sp.style.cssText='display:inline-block;width:10px;cursor:pointer;';sp.onclick=()=>{ma.splice(i,1);rm();};d.appendChild(sp);}
+      else{
+        const span=document.createElement('span');
+        const ko=liveRed&&i<target.length&&ch.toLowerCase()!==target[i].toLowerCase();
+        const ko2=liveRed&&i>=target.length;
+        span.style.cssText=`display:inline-flex;align-items:center;justify-content:center;width:28px;height:32px;border-radius:5px;font-size:1rem;border:2px solid ${(ko||ko2)?'var(--error)':'#dee2e6'};background:${(ko||ko2)?'#fdedec':'white'};color:${(ko||ko2)?'var(--error)':'#2c3e50'};${(ko||ko2)?'text-decoration:line-through;':''}cursor:pointer;`;
+        span.textContent=ch;span.onclick=()=>{ma.splice(i,1);rm();};d.appendChild(span);
+      }
+    });
+  }
+}
+</script>
+</body>
+</html>
